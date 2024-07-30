@@ -1,0 +1,57 @@
+typedef unsigned char uint8_t;
+typedef signed char int8_t;
+typedef unsigned short uint16_t;
+typedef signed short int16_t;
+typedef unsigned int uint32_t;
+typedef signed int int32_t;
+
+
+#include <stdio.h> // Include this for printf
+
+#define DELTA 0x9e3779b9
+#define TEA_ROUNDS 32
+
+void tea_encrypt(uint32_t* v, uint32_t* k) {
+    uint32_t v0 = v[0];
+    uint32_t v1 = v[1];
+    uint32_t sum = 0;
+    int i;
+    for (i = 0; i < TEA_ROUNDS; i++) {
+        sum += DELTA;
+        v0 += ((v1 << 4) + k[0]) ^ (v1 + sum) ^ ((v1 >> 5) + k[1]);
+        v1 += ((v0 << 4) + k[2]) ^ (v0 + sum) ^ ((v0 >> 5) + k[3]);
+    }
+    v[0] = v0;
+    v[1] = v1;
+}
+
+void tea_decrypt(uint32_t* v, uint32_t* k) {
+    uint32_t v0 = v[0];
+    uint32_t v1 = v[1];
+    uint32_t sum = DELTA * TEA_ROUNDS;
+    int i;
+    for (i = 0; i < TEA_ROUNDS; i++) {
+        v1 -= ((v0 << 4) + k[2]) ^ (v0 + sum) ^ ((v0 >> 5) + k[3]);
+        v0 -= ((v1 << 4) + k[0]) ^ (v1 + sum) ^ ((v1 >> 5) + k[1]);
+        sum -= DELTA;
+    }
+    v[0] = v0;
+    v[1] = v1;
+}
+
+int main() {
+    uint32_t key[4] = {0x01234567, 0x89abcdef, 0xfedcba98, 0x76543210};
+    uint32_t data[2] = {0x12345678, 0x90abcdef};
+
+    printf("Original Data: 0x%08X 0x%08X\n", data[0], data[1]);
+
+    tea_encrypt(data, key);
+
+    printf("Encrypted Data: 0x%08X 0x%08X\n", data[0], data[1]);
+
+    tea_decrypt(data, key);
+
+    printf("Decrypted Data: 0x%08X 0x%08X\n", data[0], data[1]);
+
+    return 0;
+}
